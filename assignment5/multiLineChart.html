@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Assignment 5</title>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.9.0/d3-legend.js"></script>
+<style type="text/css">
+      .line{
+        fill:none;
+        stroke-width: 1.5px;
+      }
+      .axis text{
+          font-family:sans-serif;
+          font-size:11px;
+      }
+      .axis path,
+      .axis line{
+        fill:none;
+        stroke:gray;
+        shape-rendering: crisp-edges;
+      }
+</style>
+</head>
+<body>
+	<h2 id="header">Circumference vs. Age in Trees</h2>
+	<script type="text/javascript">
+
+	//set SVG area
+	var width = 600;
+    var height = 600;
+
+    var margins = {top:0, bottom: 60, left: 60, right:0};
+
+    //set chart area
+    var chartWidth = width - margins.left - margins.right;
+    var chartHeight = height - margins.top - margins.bottom;
+
+    //Set line color values (using colors from colorbrewer2)
+    var colors = ["#E41A1C", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"];
+
+    //import data
+   	d3.csv("http://www.cs.middlebury.edu/~candrews/classes/infovis/data/orange.csv", function(dataset){
+     
+      dataset.forEach(function(d){
+        d.age = +d.age;
+        d.circumference = +d.circumference;
+
+      });
+
+      //set data doman and ranges
+      var xScale = d3.scale.linear().range([0,chartWidth - 20],.1).nice()
+        .domain([d3.min(dataset, function(d){return +d.age;}), d3.max(dataset, function(d){return +d.age;})]);
+        
+      var yScale = d3.scale.linear().range([chartHeight, 10]).nice()
+        .domain([0,d3.max(dataset, function(d){return +d.circumference;})]);
+
+      //make svg area and chart area
+      var svg = d3.select('body')
+          .append('svg')
+          .attr({width:width, height:height});
+
+      var chart = svg.append("g").
+          attr("transform","translate("+margins.left + "," + margins.top + ")");
+
+      //create our line function to generate lines in the correct scale
+      var line = d3.svg.line()
+          .x(function(d) { return xScale(+d.age); })
+          .y(function(d) { return yScale(+d.circumference); });
+
+      //set up nests for the data, separated by tree
+      var dataNest = d3.nest()
+                .key(function(d){return d.Tree;})
+                .entries(dataset);
+
+      //generate the lines and points in the chart
+      dataNest.forEach(function(d, i){
+        chart.append("path")
+        .attr("class", "line")
+        .attr("d", line(d.values))
+        .attr("style", "stroke:"+colors[i]);
+
+        chart.selectAll(".point")
+        .data(d.values)
+        .enter()
+        .append('circle')
+        .attr({cx: function(d){return xScale(+d.age);},
+          cy: function(d){return yScale(+d.circumference);},
+                r: 4})
+        .style("fill", colors[i]);
+      });
+
+      //set the axes
+      var xAxis = d3.svg.axis()
+            .scale(xScale)
+            .orient("bottom");
+
+
+        chart.append("g")
+          .attr("class","axis")
+          .attr("transform", "translate(0, " + chartHeight+")")
+          .call(xAxis)
+          .append("text")
+          .attr({
+            "x":chartWidth/2,
+            "y":margins.bottom/2,
+            "text-anchor":"middle" 
+          })
+          .text("Age");
+
+          var yAxis = d3.svg.axis()
+            .scale(yScale)
+            .orient("left");
+
+          chart.append("g")
+            .attr("class","axis")
+            .call(yAxis)
+            .append("text")
+            .attr({
+              "x":-chartHeight/2,
+              "y":3 * -margins.left/4,
+              "text-anchor":"middle",
+              "transform" : "rotate(-90)"
+            })
+            .text("Circumference");
+
+      //set the legend
+      var ordinal = d3.scale.ordinal()
+        .domain(["Tree1", "Tree2", "Tree3", "Tree4", "Tree5"])
+        .range(colors);
+
+      svg.append("g")
+        .attr("class", "legendOrdinal")
+        .attr("transform", "translate(100,20)");
+
+      var legendOrdinal = d3.legend.color()
+        .shape("path", d3.svg.symbol().type("circle").size(150)())
+        .shapePadding(10)
+        .scale(ordinal);
+
+    svg.select(".legendOrdinal")
+        .call(legendOrdinal);
+
+});
+	</script>
+	
+</body>
+</html>
