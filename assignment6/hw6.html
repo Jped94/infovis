@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple Event Example</title>
+      <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+
+      <style type="text/css">
+      .axis text{
+          font-family:sans-serif;
+          font-size:11px;
+      }
+      .axis path,
+      .axis line{
+        fill:none;
+        stroke:gray;
+        shape-rendering: crisp-edges;
+        clip-path: url(#clip);
+      }
+
+      .brushrect .extent {
+        stroke: #fff;
+        fill-opacity: .125;
+        shape-rendering: crispEdges;
+      }
+
+      #info.hidden{
+        display:none;
+      }
+
+      #info p{
+        margin:0px;
+        font-family:sans-serif;
+        font-size:12px;
+
+      }
+
+      #info {
+    position: absolute;
+}
+
+</style>
+  </head>
+  <body>
+    <div id="visDiv"></div>
+<form>
+Name: <input type="text" name="name" id = "namebox"><br>
+<input type="radio" name="gender" value="male"> Male<br>
+<input type="radio" name="gender" value="female"> Female<br>
+<input type="radio" name="gender" value="both" checked="checked"> Both
+</form>
+<button type="button" id = "update">Add</button> <br>
+<ul id="key" style = "list-style-type: none; float:left;"></ul>
+<ul id="colors" style = "list-style-type: none; float:left;">
+</ul>
+<div id="info" class="hidden">
+<p id="name">Name</p>
+</div>
+    <script>
+      var createVis = function(parent, width, height){
+        var dataset, xData, yData;
+        var currentNames = [];
+        var dataNest;
+        var max;
+        var colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"];
+
+        var margins = {top:20, bottom:60, left: 60, right:20};
+        var margin2 = {top:350, right: 20, bottom: 20, left: 60};
+        var chartWidth = width - margins.left - margins.right;
+        var chartHeight = height - margins.top - margins.bottom;
+        var brushHeight = height -margin2.top - margin2.bottom;
+
+
+        var xScale = d3.scale.linear().range([0, chartWidth]);
+        var yScale = d3.scale.linear().range([chartHeight, 0]);
+        var xScale2 = d3.scale.linear().range([0, chartWidth]);
+
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+        var xAxis2 = d3.svg.axis().scale(xScale2).orient("bottom");
+
+        var svg = d3.select(parent)
+          .append("svg")
+          .attr({width:width, height:height})
+          .attr("style", "float:left");
+
+          //clipping, changing the x messed with the axes
+          svg.append("defs").append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .attr("x", 0)
+            .attr("y", 0);
+
+        var chart = svg.append("g")
+          .attr("transform", "translate("+margins.left + "," + margins.top + ")");
+
+        var xAxisG = chart.append("g")
+          .attr({"class": "axis",
+                  "transform": "translate(0," + chartHeight +")"});
+
+        var yAxisG = chart.append("g")
+          .attr({"class": "axis"});
+
+        // adds the g for the timeline
+        var context = svg.append("g")
+        .attr("class", "context")
+        .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+
+        var vis = function(){
+          xScale.domain(d3.extent(dataset, function(d){return +d[xData];}));
+          xScale2.domain(d3.extent(dataset, function(d){return +d[xData];}));
+
+          if (currentNames.length === 0){
+            yScale.domain(d3.extent(dataset, function(d){return +d[yData];}));
+          }
+          else{
+            yScale.domain([0, max]);
+          }
+
+          var line = d3.svg.line()
+            .x(function(d) { return xScale(+d.Year); })
+            .y(function(d) { return yScale(+d.Count); });
+
+          var lines = chart.selectAll(".line").data(currentNames);
+
+          lines.exit().remove();
+
+          lines.enter().append("path")
+          .attr("class", "line")
+          .attr("d", function(d){return line(d);}) //would filter data here to take care of overextending brush issue
+          .attr("fill", "none")
+          .attr("stroke-width", 3)
+          .style("stroke", function(d){
+            var name = d[0].Name;
+            var gender = d[0].Gender;
+            // find the where this element is in currentNames so we can get the
+            // correct color
+            for (var i = 0; i < currentNames.length; i++){
+              if (currentNames[i][0].Name === name && currentNames[i][0].Gender === gender){
+                return colors[i];
+              }
+            }
+          })
+          //tooltip
+          .on("mouseover", function(d){
+            d3.select(this)
+              .classed("selected", true)
+              .attr("stroke-width", 5);
+            var info = d3.select("#info");
+            info.select("#name").text(d[0].Name + ' (' + d[0].Gender + ')');
+
+            var coordinates = d3.mouse(svg.node());
+            var bbox = svg.node().getBoundingClientRect();
+            coordinates[0] += bbox.left;
+            coordinates[1] += bbox.top;
+
+            info.style({
+              left: (coordinates[0] + 25) + "px",
+              top: (coordinates[1] ) + "px",
+            })
+            .classed("hidden", false);
+
+          })
+          .on("mouseout", function(d){
+            d3.select(this)
+              .classed("selected", false)
+              .attr("stroke-width", 3);
+
+              var info = d3.select("#info");
+              info.classed("hidden", true);
+          });
+
+          function brushed() {
+            xScale.domain(brush.empty() ? xScale2.domain() : brush.extent());
+            chart.selectAll(".line").attr("d", line);
+            xAxisG.call(xAxis);
+          }
+
+          var brush = d3.svg.brush()
+              .x(xScale2)
+              .on("brush", brushed);
+
+
+          dataNest = d3.nest()
+          .key(function(d) {return d.Name;})
+          .key(function(d) {return d.Gender;})
+          .map(dataset, d3.map);
+
+          context.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + brushHeight + ")")
+            .call(xAxis2);
+
+            context.append("g")
+              .attr("class", "brushrect")
+              .call(brush)
+            .selectAll("rect")
+              .attr("y", 10)
+              .attr("height", brushHeight + 10);
+          xAxisG.call(xAxis);
+          yAxisG.call(yAxis);
+
+          var colorsul = document.getElementById("colors");
+          while (colorsul.hasChildNodes()){
+            colorsul.removeChild(colorsul.lastChild);
+          }
+          for (var i = 0; i < currentNames.length; i++){
+            var node = document.createElement("li");
+            var box = document.createElement("div");
+            box.style= "width:19px;height:19px;background:" + colors[i];
+            node.appendChild(box);
+            colorsul.appendChild(node);
+          }
+        };
+
+
+        vis.loadData = function(data){
+          dataset = data;
+          return vis;
+        }
+
+        vis.setX = function(value){
+          if (!arguments.length) return xData;
+          xData = value;
+          return vis;
+        }
+
+        vis.setY = function(value){
+          if (!arguments.length) return yData;
+          yData = value;
+          return vis;
+        }
+        vis.removeName = function(rmvname){
+          gender = rmvname[rmvname.length-1];
+          rmvname = rmvname.slice(0,rmvname.length-1);
+
+          currentNames = currentNames.filter(function(name){
+
+            name1 = name[0];
+            if (name1.Name === rmvname){
+              console.log(name1);
+
+              if (gender === "m" && name1.Gender === "M"){
+                return false;
+              } else if (gender === "f" && name1.Gender === "F"){
+                return false;
+              }
+            }
+            return true;
+          });
+          console.log(currentNames);
+          max = d3.max(currentNames, function(d){return d3.max(d, function(d){return +d.Count});});
+        };
+        vis.addName = function(){
+
+        if (currentNames.length >9){
+          alert("You must remove a name before we can add a new one");
+        }else {
+          var textbox = document.getElementById("namebox");
+          var radio = document.getElementsByName('gender');
+          var radioVal;
+          for (var i = 0, length = radio.length; i < length; i++){
+            if (radio[i].checked){
+              radioVal = radio[i].value;
+              break;
+            }
+          }
+          if (radioVal === "male" || radioVal === "both"){
+            currentNames.push(dataNest.get(textbox.value).get("M"));
+
+            var node = document.createElement("li");
+            var textnode = document.createTextNode(textbox.value + " (M)");
+            var rmvbutton = document.createElement("button");
+            rmvbutton.innerHTML = "X";
+            rmvbutton.id = textbox.value + "m";
+            node.appendChild(textnode);
+            document.getElementById("key").appendChild(node).appendChild(rmvbutton);
+
+            rmvbutton.addEventListener("click", function(){
+              console.log("hello");
+              d3.selectAll("path.line").remove();
+              vis.removeName(rmvbutton.id);
+              document.getElementById("key").removeChild(rmvbutton.parentNode);
+              vis();
+            });
+          }
+          if (radioVal === "female" || radioVal === "both"){
+            currentNames.push(dataNest.get(textbox.value).get("F"));
+
+            var node = document.createElement("li");
+            var textnode = document.createTextNode(textbox.value + " (F)");
+            var rmvbutton2 = document.createElement("button");
+            rmvbutton2.innerHTML = "X";
+            rmvbutton2.id = textbox.value + "f";
+            node.appendChild(textnode);
+            document.getElementById("key").appendChild(node).appendChild(rmvbutton2);
+
+            rmvbutton2.addEventListener("click", function(){
+              console.log("hello");
+              d3.selectAll("path.line").remove();
+              vis.removeName(rmvbutton2.id);
+              document.getElementById("key").removeChild(rmvbutton2.parentNode);
+              vis();
+            });
+          }
+          max = d3.max(currentNames, function(d){return d3.max(d, function(d){return +d.Count});});
+        }
+        d3.selectAll(".brushrect").remove();
+        };
+
+        return vis;
+      };
+
+      var vis = createVis("#visDiv", 800,400);
+
+      vis.setX("Year")
+        .setY("Count");
+
+      d3.csv("http://www.cs.middlebury.edu/~candrews/classes/infovis/data/names1880-2012.csv",
+        function(dataset){
+
+          vis.loadData(dataset);
+          vis();
+
+      });
+
+      var updbutton = document.getElementById("update");
+      updbutton.addEventListener("click", function(){
+        d3.selectAll("path.line").remove();
+          vis.addName();
+          vis();
+
+      });
+
+
+    </script>
+  </body>
+</html>

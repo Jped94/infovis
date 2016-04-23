@@ -41,7 +41,7 @@
 
     //import data
    	d3.csv("http://www.cs.middlebury.edu/~candrews/classes/infovis/data/orange.csv", function(dataset){
-     
+
       dataset.forEach(function(d){
         d.age = +d.age;
         d.circumference = +d.circumference;
@@ -51,7 +51,7 @@
       //set data doman and ranges
       var xScale = d3.scale.linear().range([0,chartWidth - 20],.1).nice()
         .domain([d3.min(dataset, function(d){return +d.age;}), d3.max(dataset, function(d){return +d.age;})]);
-        
+
       var yScale = d3.scale.linear().range([chartHeight, 10]).nice()
         .domain([0,d3.max(dataset, function(d){return +d.circumference;})]);
 
@@ -75,6 +75,7 @@
 
       //generate the lines and points in the chart
       dataNest.forEach(function(d, i){
+        console.log(d.values);
         chart.append("path")
         .attr("class", "line")
         .attr("d", line(d.values))
@@ -104,7 +105,7 @@
           .attr({
             "x":chartWidth/2,
             "y":margins.bottom/2,
-            "text-anchor":"middle" 
+            "text-anchor":"middle"
           })
           .text("Age");
 
@@ -143,6 +144,6 @@
 
 });
 	</script>
-	
+
 </body>
 </html>

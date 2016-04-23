@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>HW7</title>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+    <style>
+
+     .axis text{
+          font-family:sans-serif;
+          font-size:11\px;
+      }
+      .axis path,
+      .axis line{
+        fill:none;
+        stroke:gray;
+        shape-rendering: crisp-edges;
+
+    </style>
+
+  </head>
+  <body>
+  <div id="">
+
+  </div>
+
+    <script type="text/javascript">
+
+      
+      var width = 700;
+      var height = 1000;
+
+	  var margin  = {left:30, right:200, top:30, bottom:50};
+	  
+	  var colors = ["Blue", "Red" ]
+	  
+	  
+	function objToFilteredArray(d, unwanted){
+		// convert object to array of associative pairs
+		// {'A':50, 'B':12} -> \[{'key':'A', 'value':50}, {'key':'B', 'value':12}\]
+		ar = d3.entries(d);
+		
+		// remove the pairs corresponding to the categorical values
+		// we do this by filtering and removing pairs that have a key in the unwanted list
+		return ar.filter(function(v){return unwanted.indexOf(v.key) == -1;});	
+	}  
+	 
+	d3.json("http://www.cs.middlebury.edu/~candrews/classes/infovis/data/films50.json", function (data){
+	
+	
+	var numkeys = []; /*
+	Object.keys(data[0]).forEach(function (d, i) {
+		numkeys.push(i);
+		});
+	*/
+	objToFilteredArray(data[0], ['studio', 'genre', 'film']).forEach (function (d) {
+			numkeys.push(d.key);
+		;})
+	
+	console.log("numkeys = " , numkeys)
+	
+	var xScale = d3.scale.ordinal()
+		.rangeRoundBands([0, width - margin.right]);
+	
+	var yScale = d3.scale.ordinal()
+		.rangeRoundBands([height - margin.top - margin.bottom, 0]);
+		
+	var color_scales = {};
+	console.log(data)
+	
+	for (prop in data[0]){
+		color_scales[prop] = d3.scale.linear()
+			.domain(d3.extent(data.map(function(d) { return +d[prop];})));
+		color_scales[prop].range(colors);
+	}	
+	
+	xScale.domain(numkeys);
+	yScale.domain(data.map(function (d, i) {return i;}));
+
+	console.log(yScale(4));
+	var svg = d3.select("body")
+		.append("svg")
+		.attr("width", width)
+		.attr("height", height)
+		.attr("transform", "translate( " + margin.left + ", " + margin.top + ")");
+	
+	var table = d3.select("body").append("table");
+
+	var drawRects = function () {
+		
+		svg.selectAll(".film").remove()
+		
+		console.log(data);
+	
+		var tr = svg.selectAll(".film")
+			.data(data)
+			.enter().append("g")
+			.attr("class", "film")
+			.attr("y", function(d,i ) { console.log(i); return yScale(i);})
+			.attr("transform", function(d, i) {return "translate(0," + yScale(i) + ")";})
+
+			var td = tr.selectAll("rect")
+			  .data(function(d) {return objToFilteredArray(d, ['studio', 'genre', 'film']);})
+			  .enter().append("rect")
+			  .attr("x", function(d, i) { return xScale(d.key);})
+			  .attr("width", xScale.rangeBand() - 1)
+			  .attr("height", yScale.rangeBand() - 1)
+			  .attr("y", 0)
+			  .attr("fill", function(d) { return color_scales[d.key](d.value);});		
+		
+		svg.selectAll(".film")
+			.data(data)
+			.append("text")
+			.attr("x", width - margin.right)
+			.attr("y", margin.top - 17)
+			.text(function (e) { return e.film;});	
+	};	
+	drawRects();
+	
+	var onClick = function (attribute){
+			data.sort( function (a, b) {
+			/*
+			console.log(attribute);
+
+			console.log(a[attribute]);
+
+			console.log(b[attribute]);
+				if (a[attribute] > b[attribute]) {
+					return 1;}
+				if (a[attribute] < b[attribute]){
+					return -1;}
+				return 0;*/
+			return (a[attribute] - b[attribute]);
+			});	
+			
+			console.log(data);
+				//	svg.selectAll(".film").remove()
+
+			drawRects();
+
+		};
+	
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom");
+		
+	svg.append("g")
+		.attr("class", "axis")
+		.attr("transform", "translate(0," + (height-margin.bottom - margin.top) + ")")
+		.call(xAxis);
+	
+	d3.select('.axis')
+		.selectAll('text')
+		.attr("transform", "translate (10, 60) rotate(90)")
+		.on('mousedown', function (d) {onClick(d);});
+
+		
+
+		
+	});
+    </script>
+
+
+  </body>
+</html>
