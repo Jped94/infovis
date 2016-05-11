@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Huffman Tree Demo</title>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <style >
+
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 1.5px;
+    }
+
+  </style>
+
+
+  </head>
+  <body>
+    <h1>Huffman Tree Demo</h1>
+<div>
+    <span>Text: </span><input type="text" id="sample" size="100"/> <br />
+    <input type="button" id="startButton" value="Start" /> <input type="button" id="stepButton" disabled="true" value="Step" />
+</div>
+
+    <svg width="800" height="800" id="vis" />
+
+    <script type="text/javascript">
+
+    var inputs = [];
+    var parentNode;
+
+    var svg = d3.select("#vis");
+
+    var start = d3.select("#startButton");
+    var stepButton = document.getElementById("stepButton");
+
+    var step = d3.select("#stepButton");
+
+    start.on("click", function(d) {
+      inputs = [];
+      parentNode = "";
+
+      svg.selectAll("*").remove();
+
+      var word = document.getElementById("sample").value;
+
+      var length = word.length;
+
+      while (length --) {
+        if (inputs.length == 0) {
+          var obj = {
+            text: word[length],
+            frequency: 1,
+            children: []
+          };
+          inputs.push(obj);
+        }
+
+        else {
+          var found = false;
+          inputs.forEach(function(inp) {
+            if (inp.text == word[length]) {
+              inp.frequency++;
+              found = true;
+            }
+          });
+
+          if (!found){
+            var obj = {
+              text: word[length],
+              frequency: 1,
+              children: []
+            };
+            inputs.push(obj);
+            found = true;
+          }
+        }
+      }
+      inputs.sort(function(a, b) {
+        if (b.frequency > a.frequency) { return 1; }
+        else if (b.frequency < a.frequency ) { return -1; }
+        else if (b.frequency == a.frequency ) { return b.text.length - a.text.length; }
+       });
+      stepButton.removeAttribute("disabled");
+
+      parentNode = {
+        text: document.getElementById("sample").value,
+        frequency: 20,
+        children: inputs
+      };
+
+      displayVis(parentNode);
+    });
+
+    step.on("click", function(d) {
+      update();
+      displayVis(parentNode);
+    });
+
+    function update() {
+      var two = inputs.slice(inputs.length-2, inputs.length);
+      inputs = inputs.slice(0, inputs.length-2);
+      var obj = {
+        text: two[0].text + two[1].text,
+        frequency: two[0].frequency + two[1].frequency,
+        children: [two[0], two[1]]
+       };
+      inputs.push(obj);
+
+      inputs.sort(function(a, b) {
+        if (b.frequency > a.frequency) { return 1; }
+        else if (b.frequency < a.frequency ) { return -1; }
+        else if (b.frequency == a.frequency ) { return b.text.length - a.text.length; }
+      });
+
+      parentNode.children = inputs;
+    }
+    function displayVis(input) {
+
+      var tree = d3.layout.tree()
+                   .size([svg.attr("height") - 150, svg.attr("width") - 150]);
+
+      var nodes = tree.nodes(input).reverse();
+      var links = tree.links(nodes);
+
+      var link = svg.selectAll("path.link")
+                    .data(links);
+
+      link.enter()
+                    .append("path")
+                    .attr("class", "link")
+                    .attr("d", d3.svg.diagonal());
+
+      link.attr("d", d3.svg.diagonal());
+
+      var node = svg.selectAll("g.node")
+                    .data(nodes, function(d) { return d.text; });
+
+
+      var nodeExit = node.exit();
+
+      var nodeEnter = node.enter().append("g")
+                          .attr("class", "node")
+                          .attr("transform", function(d) { return "translate(" +d.x +"," +d.y +")"; });
+
+      nodeEnter.append("circle")
+               .attr("r", 5);
+
+      nodeEnter.append("text")
+               .attr("x", function(d) {return 10;})
+               .attr("y", function(d) {return 4.5;})
+               .text(function(d) {return d.text +"[" +d.frequency +"]";});
+
+      var nodeUpdate = node.attr("transform", function(d) { return "translate(" +d.x +"," +d.y +")"; });
+
+      node.style("opacity", function(d, i) {
+        if (d.text == document.getElementById("sample").value) {
+          return 0;
+        } else { return 1; }
+      });
+
+      link.style("opacity", function(d, i) {
+        if (d.source.text == document.getElementById("sample").value) {
+          return 0;
+        } else { return 1; }
+      });
+
+      if (inputs.length == 1) { stepButton.setAttribute("disabled", "true"); }
+
+    }
+
+    </script>
+  </body>
+</html>

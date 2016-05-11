@@ -1,0 +1,146 @@
+
+<!DOCTYPE html >
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>
+			Supermarkets of the UK
+		</title>
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+		<style type="text/css">
+
+
+			path.country{
+				fill: none;
+				stroke:lightgrey;
+			}
+
+
+			path.IRL{
+				fill: lightgrey;
+			}
+
+			#map{
+				float:left;
+			}
+
+			#legend{
+				float:left;
+			}
+
+			#legend li{
+				list-style-type:none;
+			}
+
+			#answers{
+				clear: both;
+			}
+
+
+			.hidden{
+				display:none;
+			}
+
+
+
+		</style>
+	</head>
+	<body>
+		<h1>Supermarkets of the UK</h1>
+		<div id="map"></div>
+		<div id="legend"></div>
+
+		<div id="answers"></div>
+
+		<script type="text/javascript">
+		var width = 600, height =900;
+		var svg = d3.select("#map")
+		.append("svg")
+					.attr({"width":width, "height":height});
+
+		/*
+			Create the projection that you will use. You should use the albers projection.
+			I suggest a scale of 4500, with center at [0,55.4], using parallels [50,60],
+			and rotation of [4.4,0]. You should play with those to see what they do, but
+			those are good values to actually see what you are doing.
+
+			You should also add a translation to the projection that centers it.
+
+			reference: https://github.com/mbostock/d3/wiki/Geo-Projections
+		*/
+
+
+		/*
+		Create a path tool that makes use of the projection
+
+		reference: https://github.com/mbostock/d3/wiki/Geo-Paths
+		 */
+
+
+
+		// we grab the TopoJSON file from the server
+		d3.json("http://www.cs.middlebury.edu/~candrews/classes/infovis/data/uk-topo.json",function (mapData) {
+
+			/*
+				Draw the map. You will need to use the topojson library.
+
+				Look in the topojson file to figure out where the features are stored.
+				HINT: You are just drawing the countries of the UK.
+
+				Each country should have two classes: the id of the country(e.g., IRL), and the value "country"
+				*/
+
+
+		d3.csv('uk_supermarket_locations.csv', function(data) {
+			// extract the supermarket names
+			var supermarkets = Array.from(new Set(data.map(function(d) {return d.store;})));
+			// create a unique set of colors for the supermarkets
+			var color = d3.scale.category10().domain(supermarkets);
+
+			/*
+			Draw the dots
+
+			Start by creating a g as a drawing layer.
+
+			Create a dot for each store. use the store name as the class of thedot so we can select all dots of a certain store at once.
+			*/
+
+
+
+			/*
+			Create the legend
+
+			Start by appending a ul to the legend div
+
+			Create an li for each supermarket and save the selection in a variable.
+
+			Append a span onto each li to serve as the color part of the legend.
+			To create the box, style it with padding-left of 20px, margin-right of 10px and
+			a background-color determined by the color scale above. (feel free to play with these values)
+
+			Then append an input onto each li. The attributes of the input should be type: checkbox, name: store, value: whatever the store name is. You should also set the property checked to true.
+
+			Finally, append a span to the end of the li and set the text to the name of the supermarket.
+
+			To make the checkboxes turn the dots on and off, we need to add an event handler to the checkboxes. Inside the event handler, this refers to the checkbox, so you can get the state
+			of the checkbox with this.checked. The argument to the event handler will be the nameof the store. Select all of the dots for that store and use .classed to set the class "hidden" to the
+			inverse of the checked status (i.e., when the box is checked, hidden should be false).
+			*/
+
+
+
+		});
+	});
+
+
+
+
+
+		</script>
+
+
+
+	</body>
+</html>

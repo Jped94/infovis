@@ -28,14 +28,14 @@
 
     <script type="text/javascript">
 
-      
+
       var width = 500;
       var height = 500;
 
 	  var margin  = {left:30, right:80, top:30, bottom:50};
-	  
+
       var colors = ({'West': "Red", 'North' : "Dodgerblue", 'East':"#33cc33", 'South':"Orange"});
-	  
+
 	  var color_array = ['Red', 'Dodgerblue', 'Orange', '#33cc33']
 
 	var regions = ['West', 'North', 'South', 'East'];
@@ -47,81 +47,81 @@
 	  });
 	  return {region:region, profits:profits};
 	});
-	
+
 	console.log(data);
- 
+
 	var stack = d3.layout.stack()
 		.values(function(d) { return d.profits; });
-	
-	
+
+
 
 	var xScale = d3.scale.ordinal()
 		.rangeRoundBands([0, width - margin.right - margin.left]);
-		
+
 	var yScale = d3.scale.linear()
-		.rangeRound([height - margin.top - margin.bottom, 0]);	
-		
+		.rangeRound([height - margin.top - margin.bottom, 0]);
+
 	var xAxis = d3.svg.axis()
 		.scale(xScale)
 		.orient("bottom");
-	
+
 	var yAxis = d3.svg.axis()
 		.scale(yScale)
 		.orient("left");
-		
+
     var svg = d3.select("body")
         .append('svg')
         .attr({width:width, height:height})
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-	
-	
-	
+
+
+
 	var data_stack = stack(data)
 	console.log(data_stack)
-	
+
 	data_stack.forEach( function (region) {
 		region.profits.forEach( function (obj) {
 			obj.region = region.region;
 		})
 	});
-	
+
 	console.log(data_stack);
-	
+
 	xScale.domain(stack(data)[0].profits.map(function(d) { return d.x; }));
-	yScale.domain([0, d3.max(data_stack.map(function (d) { 
+	yScale.domain([0, d3.max(data_stack.map(function (d) {
 		return d3.max(d.profits.map(function (e) {
 			return e.y + e.y0;}));})) ]);
-	
-	
+
+
 	svg.append("g")
 		.attr("class", "axis xAxis")
 		.attr("transform", "translate(" + margin.left + "," + (height-margin.bottom) + ")")
 		.call(xAxis);
-	
+
 	svg.append("g")
 		.attr("class", "axis yAxis")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + " )")
 		.call(yAxis);
-	
-		
-		
+
+
+
 	var draw_bars = function(){
 		svg.selectAll("rect").remove();
 		svg.selectAll(".layer").remove();
-		
-		
+
+
 		var layer = svg.selectAll(".layer")
 			.data(data_stack)
 			.enter().append("g")
 			.attr("class", "layer")
 			.style("fill", function (d, i) { return colors[d.region];});
-			
-			
+
+
 		var rects = layer.selectAll("rect")
 			.data(function (d) {console.log(d); return d.profits;});
-		
-	
-		
+
+
+
 		rects.enter().append("rect")
 			.attr("width", xScale.rangeBand() - 1)
 			.attr("x", function(d) {return xScale(d.x) + margin.left;})
@@ -131,27 +131,27 @@
 				console.log("mousedown");
 				console.log(d.region);
 				var region = d.region;
-				
+
 				var temp;
-				data_stack.forEach( function (region_obj, i) { 
+				data_stack.forEach( function (region_obj, i) {
 					if (region_obj.region == region) {
 						temp = region_obj;
 						data_stack.splice(data_stack.indexOf(region_obj), 1);
 						console.log(data_stack);
 						}
 				});
-				
+
 				data_stack.unshift(temp);
 				console.log(data_stack);
-				
+
 				data_stack = stack(data_stack);
 				draw_bars();
-			
+
 			});
 	};
 
 	draw_bars();
-	
+
 	var ordinal = d3.scale.ordinal()
 		  .domain(regions)
 		  .range(color_array);
@@ -167,8 +167,8 @@
 
 		svg.select(".legendOrdinal")
 		  .call(legendOrdinal);
-				
-	
+
+
     </script>
 
 
